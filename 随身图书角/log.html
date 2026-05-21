@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程日志 · 随身图书角</title>
+<style>
+  :root {
+    --ink: #1a3048; --ink-muted: #4a6278; --celadon-deep: #2e5a7a;
+    --sky: #eef4f8; --paper: #faf9f6; --card: #ffffff;
+    --border: #8fafc8; --border-light: #b8cfe0;
+    --accent: #3d6b94; --accent-hover: #254d6b; --shadow: rgba(30, 70, 110, 0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background-color: #b8cfe0;
+    background-image: linear-gradient(180deg, #dce8f4 0%, #c5d8e8 40%, #9eb8cc 75%, #7a9aad 100%);
+    color: var(--ink); min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; overflow-x: hidden;
+  }
+  .landscape-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .landscape-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 100vh; }
+  body > *:not(.landscape-bg) { position: relative; z-index: 1; }
+  nav {
+    width: 100%; max-width: 760px; display: flex; gap: 12px;
+    padding: 1.4rem 1rem 0.9rem; margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border); align-items: baseline;
+  }
+  nav a {
+    text-decoration: none; font-size: 1rem; font-weight: 500;
+    color: var(--ink-muted); background: var(--card);
+    padding: 0.45rem 1.1rem; border-radius: 2px 2px 0 0;
+    border: 1px solid var(--border-light); border-bottom: none;
+    box-shadow: 0 2px 6px var(--shadow);
+    display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.08em;
+    transition: all 0.25s;
+  }
+  nav a::after {
+    content: ""; display: inline-block; width: 7px; height: 7px;
+    background: var(--celadon-deep); border-radius: 50%;
+  }
+  nav a:hover { background: var(--sky); color: var(--ink); }
+  .container { width: 100%; max-width: 760px; padding: 0 1rem 4rem; }
+  h1 {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.8rem; font-weight: 500; color: var(--celadon-deep);
+    margin-bottom: 0.3rem;
+  }
+  .subtitle { color: var(--ink-muted); font-size: 0.9rem; margin-bottom: 2rem; }
+  .log-form {
+    background: rgba(255,255,255,0.96); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2rem; margin-bottom: 2rem;
+    box-shadow: 0 6px 24px var(--shadow);
+  }
+  .form-row { margin-bottom: 1rem; }
+  .form-row label { font-size: 0.8rem; font-weight: 500; color: var(--ink-muted); display: block; margin-bottom: 0.3rem; }
+  input, textarea {
+    width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.95rem; background: #fffcf9;
+    font-family: inherit; color: var(--ink);
+  }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(61,107,148,0.12);
+  }
+  .inline-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .inline-group .form-row { flex: 1; min-width: 140px; }
+  button {
+    background: linear-gradient(180deg, var(--accent), var(--celadon-deep));
+    color: #f5f9fc; border: 1px solid var(--celadon-deep);
+    padding: 0.65rem 1.5rem; border-radius: 2px; font-size: 0.92rem;
+    cursor: pointer; margin-right: 0.5rem; margin-top: 0.3rem;
+    transition: transform 0.15s, box-shadow 0.2s;
+    font-family: inherit;
+    box-shadow: 0 2px 8px rgba(46,90,122,0.2);
+  }
+  button:hover { filter: brightness(1.05); }
+  button.secondary {
+    background: var(--card); color: var(--ink-muted);
+    border: 1px solid var(--border); box-shadow: none;
+  }
+  button.secondary:hover { background: var(--sky); color: var(--ink); transform: none; }
+  .log-list-header { display: flex; justify-content: space-between; margin: 2rem 0 1rem; color: var(--ink); }
+  .log-card {
+    background: rgba(255,255,255,0.94); border: 1px solid var(--border-light);
+    border-radius: 4px; padding: 1.1rem 1.3rem; margin-bottom: 0.85rem;
+    cursor: pointer; transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .log-card:hover { background: var(--sky); border-color: var(--border); }
+  .log-card-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+  .log-id { font-size: 0.75rem; color: var(--accent); }
+  .log-time { font-size: 0.82rem; color: var(--ink-muted); }
+  .log-field { margin-bottom: 0.45rem; font-size: 0.95rem; color: var(--ink-muted); }
+  .log-field strong { color: var(--ink); }
+  .delete-btn {
+    background: none; border: 1px solid var(--border-light);
+    color: var(--ink-muted); cursor: pointer; padding: 0.25rem 0.7rem;
+    border-radius: 4px; font-size: 0.8rem; font-family: inherit;
+    transition: all 0.2s; margin-top: 0.5rem;
+  }
+  .delete-btn:hover { color: #8b3a3a; border-color: #c9a0a0; background: #faf0f0; }
+  .footer-note { margin-top: 3rem; color: var(--ink-muted); text-align: center; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="landscape-bg" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="mf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a8bcc8"></stop><stop offset="100%" stop-color="#d8e4ec" stop-opacity="0"></stop></linearGradient>
+    <linearGradient id="mm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a9aad"></stop><stop offset="100%" stop-color="#c5d6e2" stop-opacity="0.2"></stop></linearGradient>
+    <linearGradient id="mn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a8498"></stop><stop offset="100%" stop-color="#b0c8d4" stop-opacity="0.3"></stop></linearGradient>
+    <linearGradient id="stream" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d4e8f2" stop-opacity="0"></stop><stop offset="50%" stop-color="#b8d4e8" stop-opacity="0.35"></stop><stop offset="100%" stop-color="#d4e8f2" stop-opacity="0"></stop></linearGradient>
+  </defs>
+  <g fill="#f8fafa" stroke="#c8dae6" stroke-width="0.8" opacity="0.65">
+    <ellipse cx="200" cy="95" rx="78" ry="22"></ellipse><ellipse cx="248" cy="88" rx="52" ry="18"></ellipse><ellipse cx="168" cy="102" rx="40" ry="14"></ellipse>
+    <ellipse cx="1180" cy="72" rx="65" ry="18"></ellipse><ellipse cx="1225" cy="78" rx="42" ry="14"></ellipse>
+    <ellipse cx="720" cy="55" rx="55" ry="16" opacity="0.45"></ellipse>
+  </g>
+  <path fill="url(#mf)" opacity="0.55" d="M-40,320 Q180,280 360,295 Q540,270 720,288 Q920,265 1120,290 Q1280,275 1480,305 L1480,580 L-40,580 Z"></path>
+  <path fill="url(#mm)" opacity="0.5" d="M-40,380 Q220,340 400,365 Q580,395 760,370 Q960,335 1140,360 Q1300,345 1480,375 L1480,580 L-40,580 Z"></path>
+  <path fill="url(#mn)" opacity="0.42" d="M-40,430 Q160,395 320,415 Q480,445 640,420 Q820,385 980,410 Q1140,435 1280,405 L1480,425 L1480,580 L-40,580 Z"></path>
+  <path fill="url(#stream)" d="M120,505 Q280,492 420,508 Q560,522 700,498 Q860,478 1020,512 Q1180,528 1320,502 L1480,498 L1480,580 L-40,580 L-40,518 Q60,510 120,505 Z"></path>
+  <path fill="none" stroke="#9eb8c8" stroke-width="1.2" stroke-opacity="0.35" d="M180,502 Q340,488 500,505 Q660,518 820,495 Q980,472 1140,508"></path>
+</svg>
+</div>
+<nav>
+  <a href="index.html">随身图书角 <span class="brand-sign">yyx</span></a>
+  <a href="log.html">工程日志</a>
+</nav>
+<div class="container">
+  <h1>工程日志</h1>
+  <div class="subtitle">随身图书角 <span class="brand-sign">yyx</span> · 个人数字记忆工程</div>
+  <div class="log-form">
+    <div class="form-row"><label>时间</label><input type="datetime-local" id="logTime" step="1"></div>
+    <div class="form-row"><label>做了什么</label><textarea id="logAction" placeholder="例如：用OCR提取书本文字…" rows="2"></textarea></div>
+    <div class="inline-group">
+      <div class="form-row"><label>使用工具</label><input type="text" id="logTools" placeholder="DeepSeek"></div>
+      <div class="form-row"><label>耗时</label><input type="text" id="logDuration" placeholder="约 1 小时"></div>
+    </div>
+    <div class="form-row"><label>工程进步</label><textarea id="logProgress" rows="2"></textarea></div>
+    <div class="form-row"><label>经历的修改</label><textarea id="logModifications" rows="2"></textarea></div>
+    <button id="addLogBtn">＋ 记录</button>
+    <button id="exportBtn" class="secondary">导出</button>
+    <button id="importBtn" class="secondary">导入</button>
+    <input type="file" id="importFile" style="display:none" accept=".json">
+  </div>
+  <div class="log-list-header">
+    <span style="font-weight:500;">所有记录</span>
+    <span id="logCount">9 条</span>
+  </div>
+  <div id="logContainer"></div>
+  <!-- prerender removed -->
+  <div style="display:none" data-removed-prerender-START><div class="log-card" data-timestamp="2026-05-21T03:11:21.000Z"><div class="log-card-header"><span class="log-id">#9</span><span class="log-time">2026/05/21 11:11:21</span></div><div class="log-field"><strong>做了什么</strong> 把UI修改成蓝色宋代中国风，在背景板加上了蓝色渐变形成远山工笔画意境，制作了副本。</div><div class="log-field"><strong>工具</strong> cursor</div><div class="log-field"><strong>耗时</strong> 10分钟</div><div class="log-field"><strong>进步</strong> CERSOR改的太快了</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-20T07:04:00.000Z"><div class="log-card-header"><span class="log-id">#8</span><span class="log-time">2026/05/20 15:04:00</span></div><div class="log-field"><strong>做了什么</strong> 将工程日志写满，将所有历史记录完整整合进源代码。删除book.html的打开文件按钮，回归简洁的下载覆盖方案。</div><div class="log-field"><strong>工具</strong> DeepSeek</div><div class="log-field"><strong>耗时</strong> 约1小时</div><div class="log-field"><strong>进步</strong> 工程日志完整记录了从OCR提取到网站完成的全部历程。精简了book.html的UI，工程日志系统本身已成为项目的一部分，记录了每一步的思考和决策。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-19T09:50:54.000Z"><div class="log-card-header"><span class="log-id">#7</span><span class="log-time">2026/05/19 17:50:54</span></div><div class="log-field"><strong>做了什么</strong> DeepSeek搭建毓秀图书角静态网站完成，修改代码，可以修改添加编辑图书信息并且删除日志。</div><div class="log-field"><strong>工具</strong> DeepSeek</div><div class="log-field"><strong>耗时</strong> 约1小时</div><div class="log-field"><strong>进步</strong> 网站的增删改查功能全部实现，工程日志可以记录、编辑、删除、导出。发现了自动保存的瓶颈——修改后需要手动下载覆盖文件，这推动了后续GitHub Pages部署的计划。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-19T07:05:00.000Z"><div class="log-card-header"><span class="log-id">#6</span><span class="log-time">2026/05/19 15:05:00</span></div><div class="log-field"><strong>做了什么</strong> 修改log-detail.html代码，增加编辑功能，但一直跟log.html连不到一起，需要解决页面间数据同步问题。</div><div class="log-field"><strong>工具</strong> DeepSeek</div><div class="log-field"><strong>耗时</strong> 约1小时</div><div class="log-field"><strong>进步</strong> 详情页有了编辑表单，但编辑后无法同步回日志列表。发现了localStorage读写不一致的问题，需要统一STORAGE_KEY和数据格式。这是对数据持久化和状态同步的第一次深度理解。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-19T06:37:00.000Z"><div class="log-card-header"><span class="log-id">#5</span><span class="log-time">2026/05/19 14:37:00</span></div><div class="log-field"><strong>做了什么</strong> 让DeepSeek将book.html网页实现了读取功能，搜索可以跳转并显示结果。骨架打好了，UI设计和其他功能需要更加完善。还想对接DeepSeek大语言模型API。</div><div class="log-field"><strong>工具</strong> DeepSeek</div><div class="log-field"><strong>耗时</strong> 约30分钟</div><div class="log-field"><strong>进步</strong> 搜索→跳转→显示结果的基本链路跑通。通过将books.json内嵌进book.html，彻底解决了浏览器本地文件读取限制。项目从技术验证阶段进入产品打磨阶段。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-19T06:15:00.000Z"><div class="log-card-header"><span class="log-id">#4</span><span class="log-time">2026/05/19 14:15:00</span></div><div class="log-field"><strong>做了什么</strong> 用DeepSeek重新编写毓秀图书角的index.html、book.html、log.html、log-detail.html、books.json，目的是让这几个页面可以相互跳转。但books.json显示不出来。</div><div class="log-field"><strong>工具</strong> DeepSeek</div><div class="log-field"><strong>耗时</strong> 约1小时</div><div class="log-field"><strong>进步</strong> 四个页面之间的导航跳转逻辑跑通，但数据文件读取失败。发现了本地静态网站最常见的坑——fetch对本地文件的跨域限制。这个发现推动了后续将数据内嵌到HTML中的关键决策。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-19T05:14:00.000Z"><div class="log-card-header"><span class="log-id">#3</span><span class="log-time">2026/05/19 13:14:00</span></div><div class="log-field"><strong>做了什么</strong> 用DeepSeek生成了工程日志网页并且在本地运行了。新建了一个txt文本文档，复制DeepSeek生成的HTML代码，将文件名修改成log.html后可以运行。</div><div class="log-field"><strong>工具</strong> DeepSeek, 记事本</div><div class="log-field"><strong>耗时</strong> 约1小时</div><div class="log-field"><strong>进步</strong> 工程日志系统首次在本地跑通，可以添加和查看日志。理解了HTML文件就是纯文本文件，改后缀名就能让浏览器识别。这是从零到一的关键一步。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-18T08:00:00.000Z"><div class="log-card-header"><span class="log-id">#2</span><span class="log-time">2026/05/18 16:00:00</span></div><div class="log-field"><strong>做了什么</strong> 让DeepSeek按照提示词生成了第一版搜索引擎网页。晚上学习了计算机的相关知识。DeepSeek告诉我网页的跳转只是在同一个文件夹里的不同HTML文件之间进行。</div><div class="log-field"><strong>工具</strong> DeepSeek</div><div class="log-field"><strong>耗时</strong> 约4小时</div><div class="log-field"><strong>进步</strong> 搜索引擎首页诞生，理解了网页跳转的本质——同一个文件夹里的不同HTML文件通过链接相互跳转。从这一刻开始，网页不再是黑箱。</div><button class="delete-btn">删除</button></div><div class="log-card" data-timestamp="2026-05-18T00:00:00.000Z"><div class="log-card-header"><span class="log-id">#1</span><span class="log-time">2026/05/18 08:00:00</span></div><div class="log-field"><strong>做了什么</strong> 拍下所有家里图书的照片，用DeepSeek OCR技术提取文字形成文本。手动修改数据中的错误信息。让DeepSeek按照图书、作者和中国国家图书编号形成有顺序的文本。让千问生成Excel表格，之后放弃，这并没有提升效率。</div><div class="log-field"><strong>工具</strong> DeepSeek, 千问, 手机相机</div><div class="log-field"><strong>耗时</strong> 约8小时</div><div class="log-field"><strong>进步</strong> 150+本书从纸质书变成了结构化的数字文本，完成了数据层的原始积累。理解了OCR技术的实际效果和局限性，做出了第一次技术选型判断——JSON比Excel更适合搜索引擎。</div><button class="delete-btn">删除</button></div></div>
+  <div class="footer-note">随身图书角 <span class="brand-sign">yyx</span> · 随身数字书架</div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  // ====== 所有日志数据（已补全工程进步） ======
+  var LOGS_DATA = [
+  {
+    "id": 9,
+    "timestamp": "2026-05-21T03:11:21.000Z",
+    "action": "把UI修改成蓝色宋代中国风，在背景板加上了蓝色渐变形成远山工笔画意境，制作了副本。",
+    "tools": "cursor",
+    "duration": "10分钟",
+    "progress": "CERSOR改的太快了",
+    "modifications": ""
+  },
+  {
+    "id": 8,
+    "timestamp": "2026-05-20T07:04:00.000Z",
+    "action": "将工程日志写满，将所有历史记录完整整合进源代码。删除book.html的打开文件按钮，回归简洁的下载覆盖方案。",
+    "tools": "DeepSeek",
+    "duration": "约1小时",
+    "progress": "工程日志完整记录了从OCR提取到网站完成的全部历程。精简了book.html的UI，工程日志系统本身已成为项目的一部分，记录了每一步的思考和决策。",
+    "modifications": "book.html的File System Access API方案被证明兼容性太差，删除了打开文件按钮，回归下载覆盖方案。这是对技术方案可行性的又一次验证——不是所有现代API都能在实际场景中稳定使用。"
+  },
+  {
+    "id": 7,
+    "timestamp": "2026-05-19T09:50:54.000Z",
+    "action": "DeepSeek搭建毓秀图书角静态网站完成，修改代码，可以修改添加编辑图书信息并且删除日志。",
+    "tools": "DeepSeek",
+    "duration": "约1小时",
+    "progress": "网站的增删改查功能全部实现，工程日志可以记录、编辑、删除、导出。发现了自动保存的瓶颈——修改后需要手动下载覆盖文件，这推动了后续GitHub Pages部署的计划。",
+    "modifications": "修改代码之后不能自动更新修改的信息包括编辑添加和删除，需要自动保存下载并且迁移网页，这十分不方便。后续计划用GitHub Pages部署。"
+  },
+  {
+    "id": 6,
+    "timestamp": "2026-05-19T07:05:00.000Z",
+    "action": "修改log-detail.html代码，增加编辑功能，但一直跟log.html连不到一起，需要解决页面间数据同步问题。",
+    "tools": "DeepSeek",
+    "duration": "约1小时",
+    "progress": "详情页有了编辑表单，但编辑后无法同步回日志列表。发现了localStorage读写不一致的问题，需要统一STORAGE_KEY和数据格式。这是对数据持久化和状态同步的第一次深度理解。",
+    "modifications": "log-detail.html和log.html之间的localStorage读写存在不一致，需要统一STORAGE_KEY和数据格式。"
+  },
+  {
+    "id": 5,
+    "timestamp": "2026-05-19T06:37:00.000Z",
+    "action": "让DeepSeek将book.html网页实现了读取功能，搜索可以跳转并显示结果。骨架打好了，UI设计和其他功能需要更加完善。还想对接DeepSeek大语言模型API。",
+    "tools": "DeepSeek",
+    "duration": "约30分钟",
+    "progress": "搜索→跳转→显示结果的基本链路跑通。通过将books.json内嵌进book.html，彻底解决了浏览器本地文件读取限制。项目从技术验证阶段进入产品打磨阶段。",
+    "modifications": "将books.json内嵌进book.html实现读取，绕过浏览器本地文件限制。"
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-05-19T06:15:00.000Z",
+    "action": "用DeepSeek重新编写毓秀图书角的index.html、book.html、log.html、log-detail.html、books.json，目的是让这几个页面可以相互跳转。但books.json显示不出来。",
+    "tools": "DeepSeek",
+    "duration": "约1小时",
+    "progress": "四个页面之间的导航跳转逻辑跑通，但数据文件读取失败。发现了本地静态网站最常见的坑——fetch对本地文件的跨域限制。这个发现推动了后续将数据内嵌到HTML中的关键决策。",
+    "modifications": "发现books.json无法被浏览器读取，这是本地静态网站最常见的坑——fetch对本地文件的跨域限制。"
+  },
+  {
+    "id": 3,
+    "timestamp": "2026-05-19T05:14:00.000Z",
+    "action": "用DeepSeek生成了工程日志网页并且在本地运行了。新建了一个txt文本文档，复制DeepSeek生成的HTML代码，将文件名修改成log.html后可以运行。",
+    "tools": "DeepSeek, 记事本",
+    "duration": "约1小时",
+    "progress": "工程日志系统首次在本地跑通，可以添加和查看日志。理解了HTML文件就是纯文本文件，改后缀名就能让浏览器识别。这是从零到一的关键一步。",
+    "modifications": "理解了HTML文件就是纯文本文件，改后缀名就能让浏览器识别。"
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-05-18T08:00:00.000Z",
+    "action": "让DeepSeek按照提示词生成了第一版搜索引擎网页。晚上学习了计算机的相关知识。DeepSeek告诉我网页的跳转只是在同一个文件夹里的不同HTML文件之间进行。",
+    "tools": "DeepSeek",
+    "duration": "约4小时",
+    "progress": "搜索引擎首页诞生，理解了网页跳转的本质——同一个文件夹里的不同HTML文件通过链接相互跳转。从这一刻开始，网页不再是黑箱。",
+    "modifications": "这是整个毓秀图书角项目的起点。"
+  },
+  {
+    "id": 1,
+    "timestamp": "2026-05-18T00:00:00.000Z",
+    "action": "拍下所有家里图书的照片，用DeepSeek OCR技术提取文字形成文本。手动修改数据中的错误信息。让DeepSeek按照图书、作者和中国国家图书编号形成有顺序的文本。让千问生成Excel表格，之后放弃，这并没有提升效率。",
+    "tools": "DeepSeek, 千问, 手机相机",
+    "duration": "约8小时",
+    "progress": "150+本书从纸质书变成了结构化的数字文本，完成了数据层的原始积累。理解了OCR技术的实际效果和局限性，做出了第一次技术选型判断——JSON比Excel更适合搜索引擎。",
+    "modifications": "千问生成的Excel表格被放弃，因为对搜索引擎来说JSON格式比Excel更直接可用。这是第一次技术选型判断。"
+  }
+];
+
+  var EMBEDDED_LOGS = LOGS_DATA.slice();
+  LOGS_DATA = loadLogsDataset(EMBEDDED_LOGS);
+  seedDataCacheIfEmpty(YUXIU_STORAGE.LOGS, EMBEDDED_LOGS);
+
+  var logTimeInput = document.getElementById('logTime');
+  var logActionInput = document.getElementById('logAction');
+  var logToolsInput = document.getElementById('logTools');
+  var logDurationInput = document.getElementById('logDuration');
+  var logProgressInput = document.getElementById('logProgress');
+  var logModificationsInput = document.getElementById('logModifications');
+  var addBtn = document.getElementById('addLogBtn');
+  var logContainer = document.getElementById('logContainer');
+  var logCountSpan = document.getElementById('logCount');
+
+  function setCurrentTime() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = String(now.getMonth() + 1).padStart(2, '0');
+    var day = String(now.getDate()).padStart(2, '0');
+    var hours = String(now.getHours()).padStart(2, '0');
+    var minutes = String(now.getMinutes()).padStart(2, '0');
+    var seconds = String(now.getSeconds()).padStart(2, '0');
+    logTimeInput.value = year + '-' + month + '-' + day + 'T' + hours + ':' + minutes + ':' + seconds;
+  }
+  setCurrentTime();
+
+  function escapeHtml(text) {
+    return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+  function getMaxId() { return LOGS_DATA.length ? Math.max(...LOGS_DATA.map(l => l.id || 0)) : 0; }
+  function ensureIds() { var maxId = getMaxId(); LOGS_DATA.forEach(l => { if (!l.id) { maxId++; l.id = maxId; } }); }
+
+  function persistLogs() {
+    writeDataCache(YUXIU_STORAGE.LOGS, LOGS_DATA, true);
+  }
+
+  function reloadLogsFromCache() {
+    LOGS_DATA = loadLogsDataset(EMBEDDED_LOGS);
+    renderLogs();
+  }
+
+  function renderLogs() {
+    ensureIds();
+    logCountSpan.textContent = LOGS_DATA.length + ' 条';
+    if (!LOGS_DATA.length) {
+      logContainer.innerHTML = '<div style="color:#4a6278;text-align:center;padding:2rem;">暂无日志</div>';
+      return;
+    }
+    LOGS_DATA.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+    var html = '';
+    LOGS_DATA.forEach(log => {
+      var timeStr = new Date(log.timestamp).toLocaleString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+      html += '<div class="log-card" data-timestamp="'+log.timestamp+'">'+
+        '<div class="log-card-header"><span class="log-id">#'+log.id+'</span><span class="log-time">'+timeStr+'</span></div>'+
+        (log.action ? '<div class="log-field"><strong>做了什么</strong> '+escapeHtml(log.action)+'</div>' : '')+
+        (log.tools ? '<div class="log-field"><strong>工具</strong> '+escapeHtml(log.tools)+'</div>' : '')+
+        (log.duration ? '<div class="log-field"><strong>耗时</strong> '+escapeHtml(log.duration)+'</div>' : '')+
+        (log.progress ? '<div class="log-field"><strong>进步</strong> '+escapeHtml(log.progress)+'</div>' : '')+
+        '<button class="delete-btn">删除</button></div>';
+    });
+    logContainer.innerHTML = html;
+
+    // 卡片点击跳转详情
+    document.querySelectorAll('.log-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-btn')) return;
+        var ts = this.dataset.timestamp;
+        writeDataCache(YUXIU_STORAGE.LOGS, LOGS_DATA, false);
+        window.location.href = 'log-detail.html?id=' + encodeURIComponent(ts);
+      });
+    });
+
+    // 删除按钮事件
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var ts = this.closest('.log-card').dataset.timestamp;
+        showConfirmDialog('确认要删除这条日志吗？').then(function(ok) {
+          if (!ok) return;
+          LOGS_DATA = LOGS_DATA.filter(function(log) { return log.timestamp !== ts; });
+          renderLogs();
+          persistLogs();
+        });
+      });
+    });
+  }
+
+  function addLog() {
+    var timestamp = logTimeInput.value;
+    if(!timestamp){ alert('请选择时间'); return; }
+    var action = logActionInput.value.trim();
+    if(!action){ alert('请填写"做了什么"'); return; }
+    ensureIds();
+    var newId = getMaxId()+1;
+    var newLog = {
+      id: newId,
+      timestamp: new Date(timestamp).toISOString(),
+      action: action, tools: logToolsInput.value.trim(),
+      duration: logDurationInput.value.trim(),
+      progress: logProgressInput.value.trim(),
+      modifications: logModificationsInput.value.trim()
+    };
+    LOGS_DATA.push(newLog);
+    renderLogs();
+    persistLogs();
+    clearForm();
+  }
+
+  function clearForm() {
+    logActionInput.value=''; logToolsInput.value=''; logDurationInput.value='';
+    logProgressInput.value=''; logModificationsInput.value='';
+    setCurrentTime();
+  }
+
+  addBtn.addEventListener('click', addLog);
+  document.getElementById('exportBtn').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(LOGS_DATA, null, 2)], {type:'application/json'});
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'logs-backup.json'; a.click();
+  });
+  document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', function(e){
+    if(!e.target.files.length) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var data = JSON.parse(ev.target.result);
+        if(!Array.isArray(data)){ alert('格式错误'); return; }
+        LOGS_DATA = data; ensureIds();
+        renderLogs();
+        persistLogs();
+      }catch(ex){ alert('解析失败'); }
+    };
+    reader.readAsText(e.target.files[0]);
+  });
+
+  window.addEventListener('pageshow', reloadLogsFromCache);
+
+  renderLogs();
+</script>
+
+</body></html>

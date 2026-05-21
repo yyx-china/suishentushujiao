@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随身图书角 · 书库</title>
+<style>
+  :root {
+    --ink: #1a3048; --ink-muted: #4a6278; --celadon-deep: #2e5a7a;
+    --sky: #eef4f8; --paper: #faf9f6; --card: #ffffff;
+    --border: #8fafc8; --border-light: #b8cfe0;
+    --accent: #3d6b94; --accent-hover: #254d6b; --shadow: rgba(30, 70, 110, 0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background-color: #b8cfe0;
+    background-image: linear-gradient(180deg, #dce8f4 0%, #c5d8e8 40%, #9eb8cc 75%, #7a9aad 100%);
+    color: var(--ink); min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; overflow-x: hidden;
+  }
+  .landscape-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .landscape-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 100vh; }
+  body > *:not(.landscape-bg) { position: relative; z-index: 1; }
+  nav {
+    width: 100%; max-width: 760px; display: flex; gap: 12px;
+    padding: 1.4rem 1rem 0.9rem; margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border);
+  }
+  nav a {
+    text-decoration: none; font-size: 1rem; font-weight: 500;
+    color: var(--ink-muted); background: var(--card);
+    padding: 0.45rem 1.1rem; border-radius: 2px 2px 0 0;
+    border: 1px solid var(--border-light); border-bottom: none;
+    box-shadow: 0 2px 6px var(--shadow);
+    display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.08em;
+    transition: all 0.25s;
+  }
+  nav a::after {
+    content: ""; display: inline-block; width: 7px; height: 7px;
+    background: var(--celadon-deep); border-radius: 50%;
+  }
+  nav a:hover { background: var(--sky); color: var(--ink); }
+  .container { width: 100%; max-width: 760px; padding: 0 1rem 4rem; }
+  .toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.4rem; flex-wrap: wrap; gap: 0.8rem;
+  }
+  .btn {
+    background: linear-gradient(180deg, var(--accent), var(--celadon-deep));
+    color: #f5f9fc; border: 1px solid var(--celadon-deep);
+    padding: 0.55rem 1.4rem; border-radius: 2px; font-size: 0.92rem;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+    font-family: inherit;
+    box-shadow: 0 2px 8px rgba(46,90,122,0.2);
+  }
+  .btn:hover { filter: brightness(1.05); }
+  .btn.secondary {
+    background: var(--card); color: var(--ink-muted);
+    border: 1px solid var(--border); box-shadow: none;
+  }
+  .btn.secondary:hover { background: var(--sky); color: var(--ink); transform: none; }
+  .form-card {
+    background: rgba(255,255,255,0.96); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2rem; margin-bottom: 2rem;
+    display: none; box-shadow: 0 6px 24px var(--shadow);
+  }
+  .form-card.active { display: block; }
+  .form-card h3 {
+    font-family: "Noto Serif SC", serif;
+    color: var(--celadon-deep); margin-bottom: 1rem;
+    font-size: 1.1rem; font-weight: 500;
+  }
+  .form-row { margin-bottom: 1rem; }
+  .form-row label { font-size: 0.8rem; font-weight: 500; color: var(--ink-muted); display: block; margin-bottom: 0.3rem; }
+  input, textarea {
+    width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.95rem; background: #fffcf9;
+    font-family: inherit; color: var(--ink);
+  }
+  input:focus, textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(61,107,148,0.12);
+  }
+  .inline-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .inline-group .form-row { flex: 1; min-width: 140px; }
+  .book-card {
+    background: rgba(255,255,255,0.94); border: 1px solid var(--border-light);
+    border-radius: 4px; padding: 1.6rem 1.5rem; margin-bottom: 1.2rem;
+    box-shadow: 0 4px 16px var(--shadow); position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .book-card:hover { border-color: var(--border); box-shadow: 0 6px 20px var(--shadow); }
+  .book-card h2 {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.4rem; color: var(--celadon-deep);
+    margin-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border-light); padding-bottom: 0.4rem;
+    padding-right: 4rem;
+  }
+  .book-card p { margin-bottom: 0.4rem; font-size: 0.95rem; color: var(--ink-muted); }
+  .book-card p strong { color: var(--ink); }
+  .book-card img {
+    max-width: 180px; border-radius: 2px; margin-top: 10px;
+    border: 1px solid var(--border-light); box-shadow: 0 2px 8px var(--shadow);
+  }
+  .book-card .edit-btn {
+    position: static;
+    background: var(--card); border: 1px solid var(--border-light);
+    color: var(--ink-muted); font-size: 0.85rem;
+    cursor: pointer; padding: 0.25rem 0.75rem; border-radius: 2px;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .book-card .edit-btn:hover {
+    background: var(--sky); color: var(--accent); border-color: var(--accent);
+  }
+  .book-card .card-actions {
+    position: absolute; top: 1rem; right: 1rem;
+    display: flex; gap: 0.4rem;
+  }
+  .book-card .delete-btn {
+    background: var(--card); border: 1px solid var(--border-light);
+    color: var(--ink-muted); font-size: 0.85rem;
+    cursor: pointer; padding: 0.25rem 0.75rem; border-radius: 2px;
+    font-family: inherit; transition: all 0.2s;
+  }
+  .book-card .delete-btn:hover {
+    color: #8b3a3a; border-color: #c9a0a0; background: #faf0f0;
+  }
+  .empty { text-align: center; color: var(--ink-muted); padding: 4rem 2rem; }
+  .info { color: var(--ink-muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="landscape-bg" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="mf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a8bcc8"/><stop offset="100%" stop-color="#d8e4ec" stop-opacity="0"/></linearGradient>
+    <linearGradient id="mm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a9aad"/><stop offset="100%" stop-color="#c5d6e2" stop-opacity="0.2"/></linearGradient>
+    <linearGradient id="mn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a8498"/><stop offset="100%" stop-color="#b0c8d4" stop-opacity="0.3"/></linearGradient>
+    <linearGradient id="stream" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d4e8f2" stop-opacity="0"/><stop offset="50%" stop-color="#b8d4e8" stop-opacity="0.35"/><stop offset="100%" stop-color="#d4e8f2" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g fill="#f8fafa" stroke="#c8dae6" stroke-width="0.8" opacity="0.65">
+    <ellipse cx="200" cy="95" rx="78" ry="22"/><ellipse cx="248" cy="88" rx="52" ry="18"/><ellipse cx="168" cy="102" rx="40" ry="14"/>
+    <ellipse cx="1180" cy="72" rx="65" ry="18"/><ellipse cx="1225" cy="78" rx="42" ry="14"/>
+    <ellipse cx="720" cy="55" rx="55" ry="16" opacity="0.45"/>
+  </g>
+  <path fill="url(#mf)" opacity="0.55" d="M-40,320 Q180,280 360,295 Q540,270 720,288 Q920,265 1120,290 Q1280,275 1480,305 L1480,580 L-40,580 Z"/>
+  <path fill="url(#mm)" opacity="0.5" d="M-40,380 Q220,340 400,365 Q580,395 760,370 Q960,335 1140,360 Q1300,345 1480,375 L1480,580 L-40,580 Z"/>
+  <path fill="url(#mn)" opacity="0.42" d="M-40,430 Q160,395 320,415 Q480,445 640,420 Q820,385 980,410 Q1140,435 1280,405 L1480,425 L1480,580 L-40,580 Z"/>
+  <path fill="url(#stream)" d="M120,505 Q280,492 420,508 Q560,522 700,498 Q860,478 1020,512 Q1180,528 1320,502 L1480,498 L1480,580 L-40,580 L-40,518 Q60,510 120,505 Z"/>
+  <path fill="none" stroke="#9eb8c8" stroke-width="1.2" stroke-opacity="0.35" d="M180,502 Q340,488 500,505 Q660,518 820,495 Q980,472 1140,508"/>
+</svg>
+</div>
+<nav>
+  <a href="index.html">随身图书角 <span class="brand-sign">yyx</span></a>
+  <a href="log.html">工程日志</a>
+</nav>
+<div class="container">
+  <div class="toolbar">
+    <span id="infoText" class="info">全部藏书：154 本</span>
+    <button class="btn" id="showAddFormBtn">＋ 添加新书</button>
+  </div>
+
+  <div id="bookForm" class="form-card">
+    <h3 id="formTitle">添加新书</h3>
+    <input type="hidden" id="editIndex" value="-1">
+    <div class="form-row"><label>书名</label><input type="text" id="bookTitle" placeholder="书名"></div>
+    <div class="form-row"><label>作者</label><input type="text" id="bookAuthor" placeholder="作者"></div>
+    <div class="inline-group">
+      <div class="form-row"><label>中图分类号</label><input type="text" id="bookCode" placeholder="如 I247.5"></div>
+      <div class="form-row"><label>专业类别</label><input type="text" id="bookCategory" placeholder="如 中国当代小说"></div>
+    </div>
+    <div class="form-row"><label>笔记（读后感）</label><textarea id="bookNote" rows="2" placeholder="个人笔记…"></textarea></div>
+    <div class="form-row"><label>图片路径</label><input type="text" id="bookImage" placeholder="images/书名.jpg（可选）"></div>
+    <div style="display:flex; gap:0.5rem;">
+      <button class="btn" id="saveBookBtn">保存</button>
+      <button class="btn secondary" id="cancelFormBtn">取消</button>
+    </div>
+  </div>
+  <div id="results"></div>
+</div>
+
+<script src="common.js"></script>
+<script>
+  var BOOKS_DATA = [{"书名":"马克思主义基本原理","作者":"本书编写组","中图分类号":"A81","专业类别":"马克思主义哲学","笔记":"","图片路径":""},{"书名":"资本论","作者":"马克思","中图分类号":"A123","专业类别":"马克思主义政治经济学","笔记":"","图片路径":""},{"书名":"毛泽东思想和中国特色社会主义理论体系概论（2023年版）","作者":"本书编写组","中图分类号":"A84/A81","专业类别":"毛泽东思想/中国特色社会主义","笔记":"","图片路径":""},{"书名":"中国哲学史","作者":"冯友兰","中图分类号":"B2","专业类别":"中国哲学","笔记":"","图片路径":""},{"书名":"周易","作者":"未知","中图分类号":"B221","专业类别":"中国哲学/易学","笔记":"","图片路径":""},{"书名":"道德经","作者":"老子","中图分类号":"B223.15","专业类别":"道家哲学","笔记":"","图片路径":""},{"书名":"理想国","作者":"柏拉图","中图分类号":"B502.232","专业类别":"古希腊哲学","笔记":"","图片路径":""},{"书名":"沉思录","作者":"马可·奥勒留","中图分类号":"B502.43","专业类别":"斯多葛哲学","笔记":"","图片路径":""},{"书名":"刘擎西方现代思想讲义","作者":"刘擎","中图分类号":"B5","专业类别":"西方哲学","笔记":"","图片路径":""},{"书名":"西西弗神话","作者":"阿尔贝·加缪","中图分类号":"B565.59","专业类别":"法国存在主义哲学","笔记":"","图片路径":""},{"书名":"小窗幽记","作者":"陈继儒","中图分类号":"B825","专业类别":"中国修身","笔记":"","图片路径":""},{"书名":"烦恼退散","作者":"多罗西123","中图分类号":"B842.6","专业类别":"通俗心理学","笔记":"","图片路径":""},{"书名":"做人不妥协太过分","作者":"侯小强","中图分类号":"B821","专业类别":"人生哲学","笔记":"","图片路径":""},{"书名":"管理学","作者":"未知","中图分类号":"C93","专业类别":"管理学","笔记":"","图片路径":""},{"书名":"党政机关公文处理与写作实用手册","作者":"中国文史出版社（编）","中图分类号":"C931.46","专业类别":"文书工作","笔记":"","图片路径":""},{"书名":"爱，需要学习","作者":"陈海贤","中图分类号":"C913.1","专业类别":"恋爱心理学","笔记":"","图片路径":""},{"书名":"始于极限","作者":"上野千鹤子、铃木凉美","中图分类号":"C913.14","专业类别":"女性主义社会学","笔记":"","图片路径":""},{"书名":"送你一颗子弹","作者":"刘瑜","中图分类号":"C53","专业类别":"中国当代社科随笔","笔记":"","图片路径":""},{"书名":"创新实干促发展","作者":"未知","中图分类号":"D61","专业类别":"中国政治理论","笔记":"","图片路径":""},{"书名":"习近平新时代中国特色社会主义思想专题摘编","作者":"中共中央党史和文献研究院","中图分类号":"D610.4","专业类别":"中国政治理论","笔记":"","图片路径":""},{"书名":"习近平新时代中国特色社会主义思想概论","作者":"本书编写组","中图分类号":"D610.4","专业类别":"中国政治理论","笔记":"","图片路径":""},{"书名":"图解二十届三中全会精神","作者":"未知","中图分类号":"D229","专业类别":"中国共产党会议文件","笔记":"","图片路径":""},{"书名":"圆圈正义","作者":"罗翔","中图分类号":"D924","专业类别":"中国刑法","笔记":"","图片路径":""},{"书名":"正义的回响","作者":"罗翔","中图分类号":"D924","专业类别":"中国刑法","笔记":"","图片路径":""},{"书名":"跟考官思维学面试（学透理论）","作者":"未知","中图分类号":"D630.3","专业类别":"中国公务员考试","笔记":"","图片路径":""},{"书名":"跟考官思维学面试（编组编著）","作者":"未知","中图分类号":"D630.3","专业类别":"中国公务员考试","笔记":"","图片路径":""},{"书名":"老夏说公务员面试：100真题摆平面试","作者":"老夏","中图分类号":"D630.3","专业类别":"中国公务员考试","笔记":"","图片路径":""},{"书名":"三十六计","作者":"未知","中图分类号":"E892.2","专业类别":"中国兵法","笔记":"","图片路径":""},{"书名":"孙子兵法","作者":"孙武","中图分类号":"E892.25","专业类别":"中国兵法","笔记":"","图片路径":""},{"书名":"薛兆丰经济学讲义","作者":"薛兆丰","中图分类号":"F0-49","专业类别":"经济学通俗读物","笔记":"","图片路径":""},{"书名":"旅游学概论","作者":"未知","中图分类号":"F590","专业类别":"旅游学教材","笔记":"","图片路径":""},{"书名":"旅游学（第四版）","作者":"未知","中图分类号":"F590","专业类别":"旅游学教材","笔记":"","图片路径":""},{"书名":"娱乐至死","作者":"尼尔·波兹曼","中图分类号":"G206.3","专业类别":"传播学","笔记":"","图片路径":""},{"书名":"英语高考必备","作者":"未知","中图分类号":"G634.413","专业类别":"中学英语教辅","笔记":"","图片路径":""},{"书名":"雅思词汇真经","作者":"刘洪波","中图分类号":"H313.1","专业类别":"英语词汇","笔记":"","图片路径":""},{"书名":"牛津高阶英汉双解词典","作者":"牛津大学出版社","中图分类号":"H316","专业类别":"英语词典","笔记":"","图片路径":""},{"书名":"英汉词典（外文社）","作者":"外文社","中图分类号":"H316","专业类别":"英语词典","笔记":"","图片路径":""},{"书名":"古文观止","作者":"吴楚材、吴调侯","中图分类号":"H194.1","专业类别":"古文选本","笔记":"","图片路径":""},{"书名":"雅思王听力真题语料库","作者":"王陆","中图分类号":"H319.9","专业类别":"英语听说","笔记":"","图片路径":""},{"书名":"标准日本语 初级","作者":"人民教育出版社","中图分类号":"H369","专业类别":"日语教材","笔记":"","图片路径":""},{"书名":"延世韩国语1","作者":"延世大学韩国语学堂","中图分类号":"H559","专业类别":"韩语教材","笔记":"","图片路径":""},{"书名":"红楼梦","作者":"书名待确认","中图分类号":"I242.4","专业类别":"中国古典小说","笔记":"","图片路径":""},{"书名":"水浒全传","作者":"施耐庵、罗贯中","中图分类号":"I242.4","专业类别":"中国古典小说","笔记":"","图片路径":""},{"书名":"西游记","作者":"吴承恩","中图分类号":"I242.4","专业类别":"中国古典小说","笔记":"","图片路径":""},{"书名":"西游记 下","作者":"吴承恩","中图分类号":"I242.4","专业类别":"中国古典小说","笔记":"","图片路径":""},{"书名":"三国演义","作者":"罗贯中","中图分类号":"I242.4","专业类别":"中国古典小说","笔记":"","图片路径":""},{"书名":"儒林外史","作者":"吴敬梓","中图分类号":"I242.4","专业类别":"中国古典讽刺小说","笔记":"","图片路径":""},{"书名":"拍案惊奇","作者":"凌濛初","中图分类号":"I242.3","专业类别":"中国古典小说","笔记":"","图片路径":""},{"书名":"世说新语","作者":"刘义庆","中图分类号":"I242.1","专业类别":"中国笔记小说","笔记":"","图片路径":""},{"书名":"源氏物语","作者":"紫式部","中图分类号":"I313.43","专业类别":"日本古典小说","笔记":"","图片路径":""},{"书名":"金色梦乡","作者":"伊坂幸太郎","中图分类号":"I313.45","专业类别":"日本文学","笔记":"","图片路径":""},{"书名":"春雪","作者":"三岛由纪夫","中图分类号":"I313.45","专业类别":"日本文学","笔记":"","图片路径":""},{"书名":"假面的告白","作者":"三岛由纪夫","中图分类号":"I313.45","专业类别":"日本文学","笔记":"","图片路径":""},{"书名":"挪威的森林","作者":"村上春树","中图分类号":"I313.45","专业类别":"日本小说","笔记":"","图片路径":""},{"书名":"雪国","作者":"川端康成","中图分类号":"I313.45","专业类别":"日本文学","笔记":"","图片路径":""},{"书名":"没有色彩的多崎作和他的巡礼之年","作者":"村上春树","中图分类号":"I313.45","专业类别":"日本文学","笔记":"","图片路径":""},{"书名":"一朵桔梗花","作者":"连城三纪彦","中图分类号":"I313.45","专业类别":"日本文学","笔记":"","图片路径":""},{"书名":"战争与和平","作者":"列夫·托尔斯泰","中图分类号":"I512.44","专业类别":"俄国文学","笔记":"","图片路径":""},{"书名":"安娜·卡列尼娜","作者":"列夫·托尔斯泰","中图分类号":"I512.44","专业类别":"俄国文学","笔记":"","图片路径":""},{"书名":"复活","作者":"列夫·托尔斯泰","中图分类号":"I512.44","专业类别":"俄国文学","笔记":"","图片路径":""},{"书名":"罪与罚","作者":"陀思妥耶夫斯基","中图分类号":"I512.44","专业类别":"俄国文学","笔记":"","图片路径":""},{"书名":"卡拉马佐夫兄弟","作者":"陀思妥耶夫斯基","中图分类号":"I512.44","专业类别":"俄国文学","笔记":"","图片路径":""},{"书名":"白夜","作者":"陀思妥耶夫斯基","中图分类号":"I512.44","专业类别":"俄国文学","笔记":"","图片路径":""},{"书名":"钢铁是怎样炼成的","作者":"奥斯特洛夫斯基","中图分类号":"I512.45","专业类别":"苏联小说","笔记":"","图片路径":""},{"书名":"一个陌生女人的来信","作者":"斯蒂芬·茨威格","中图分类号":"I521.45","专业类别":"奥地利文学","笔记":"","图片路径":""},{"书名":"牛虻","作者":"埃塞尔·伏尼契","中图分类号":"I561.44","专业类别":"英国文学","笔记":"","图片路径":""},{"书名":"简·爱","作者":"夏洛蒂·勃朗特","中图分类号":"I561.44","专业类别":"英国文学","笔记":"","图片路径":""},{"书名":"呼啸山庄","作者":"艾米莉·勃朗特","中图分类号":"I561.44","专业类别":"英国文学","笔记":"","图片路径":""},{"书名":"大卫·科波菲尔","作者":"查尔斯·狄更斯","中图分类号":"I561.44","专业类别":"英国文学","笔记":"","图片路径":""},{"书名":"哈姆雷特","作者":"莎士比亚","中图分类号":"I561.33","专业类别":"英国戏剧","笔记":"","图片路径":""},{"书名":"傲慢与偏见","作者":"简·奥斯汀","中图分类号":"I561.44","专业类别":"英国文学","笔记":"","图片路径":""},{"书名":"鲁滨逊漂流记","作者":"丹尼尔·笛福","中图分类号":"I561.44","专业类别":"英国小说","笔记":"","图片路径":""},{"书名":"雾都孤儿","作者":"查尔斯·狄更斯","中图分类号":"I561.44","专业类别":"英国小说","笔记":"","图片路径":""},{"书名":"美丽新世界","作者":"赫胥黎","中图分类号":"I561.45","专业类别":"英国反乌托邦小说","笔记":"","图片路径":""},{"书名":"1984","作者":"乔治·奥威尔","中图分类号":"I561.45","专业类别":"英国反乌托邦文学","笔记":"","图片路径":""},{"书名":"动物农场","作者":"乔治·奥威尔","中图分类号":"I561.45","专业类别":"英国政治寓言","笔记":"","图片路径":""},{"书名":"到灯塔去","作者":"弗吉尼亚·伍尔夫","中图分类号":"I561.45","专业类别":"英国文学","笔记":"","图片路径":""},{"书名":"尤利西斯","作者":"詹姆斯·乔伊斯","中图分类号":"I562.45","专业类别":"爱尔兰文学","笔记":"","图片路径":""},{"书名":"高老头","作者":"巴尔扎克","中图分类号":"I565.44","专业类别":"法国文学","笔记":"","图片路径":""},{"书名":"包法利夫人","作者":"福楼拜","中图分类号":"I565.44","专业类别":"法国文学","笔记":"","图片路径":""},{"书名":"红与黑","作者":"司汤达","中图分类号":"I565.44","专业类别":"法国文学","笔记":"","图片路径":""},{"书名":"茶花女","作者":"小仲马","中图分类号":"I565.44","专业类别":"法国文学","笔记":"","图片路径":""},{"书名":"霍乱时期的爱情","作者":"加西亚·马尔克斯","中图分类号":"I775.45","专业类别":"哥伦比亚小说","笔记":"","图片路径":""},{"书名":"二十首情诗和一支绝望的歌","作者":"巴勃罗·聂鲁达","中图分类号":"I784.25","专业类别":"智利诗歌","笔记":"","图片路径":""},{"书名":"地球上最后的夜晚","作者":"罗贝托·波拉尼奥","中图分类号":"I784.45","专业类别":"智利小说","笔记":"","图片路径":""},{"书名":"牧羊少年奇幻之旅","作者":"保罗·柯艾略","中图分类号":"I777.45","专业类别":"巴西小说","笔记":"","图片路径":""},{"书名":"Flipped（怦然心动）","作者":"文德琳·范·德拉安南","中图分类号":"I712.45","专业类别":"美国小说","笔记":"","图片路径":""},{"书名":"爱伦·坡短篇小说集","作者":"爱伦·坡","中图分类号":"I712.44","专业类别":"美国文学","笔记":"","图片路径":""},{"书名":"Wonder","作者":"R.J.帕拉西奥","中图分类号":"I712.84","专业类别":"美国儿童文学","笔记":"","图片路径":""},{"书名":"我们仨","作者":"杨绛","中图分类号":"I267","专业类别":"中国当代散文","笔记":"","图片路径":""},{"书名":"老舍谈写作","作者":"老舍","中图分类号":"I04","专业类别":"中国写作理论","笔记":"","图片路径":""},{"书名":"文学回忆录","作者":"木心（口述）/陈丹青（笔录）","中图分类号":"I109.9","专业类别":"世界文学史","笔记":"","图片路径":""},{"书名":"鲁迅全集","作者":"鲁迅","中图分类号":"I210.1","专业类别":"中国现代文学全集","笔记":"","图片路径":""},{"书名":"人间词话","作者":"王国维","中图分类号":"I207.23","专业类别":"中国词学评论","笔记":"","图片路径":""},{"书名":"唐诗宋词鉴赏辞典","作者":"未知","中图分类号":"I207.2","专业类别":"诗词鉴赏","笔记":"","图片路径":""},{"书名":"相思莫相负","作者":"白落梅","中图分类号":"I207.23","专业类别":"中国古诗词鉴赏","笔记":"","图片路径":""},{"书名":"静守宋词的清韵","作者":"白落梅","中图分类号":"I207.23","专业类别":"中国古诗词鉴赏","笔记":"","图片路径":""},{"书名":"现代散文鉴赏辞典","作者":"未知","中图分类号":"I207.67","专业类别":"散文鉴赏工具书","笔记":"","图片路径":""},{"书名":"红玫瑰与白玫瑰","作者":"张爱玲","中图分类号":"I246.7","专业类别":"中国现代小说","笔记":"","图片路径":""},{"书名":"倾城之恋","作者":"张爱玲","中图分类号":"I246.7","专业类别":"中国现代小说","笔记":"","图片路径":""},{"书名":"边城","作者":"沈从文","中图分类号":"I246.7","专业类别":"中国现代小说","笔记":"","图片路径":""},{"书名":"四世同堂","作者":"老舍","中图分类号":"I246.57","专业类别":"中国现代长篇小说","笔记":"","图片路径":""},{"书名":"围城","作者":"钱钟书","中图分类号":"I246.57","专业类别":"中国现代小说","笔记":"","图片路径":""},{"书名":"三体","作者":"刘慈欣","中图分类号":"I247.55","专业类别":"中国科幻小说","笔记":"","图片路径":""},{"书名":"三体Ⅱ·黑暗森林","作者":"刘慈欣","中图分类号":"I247.55","专业类别":"中国科幻小说","笔记":"","图片路径":""},{"书名":"暗恋橘生淮南 上","作者":"八月长安","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"暗恋橘生淮南 下","作者":"八月长安","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"金鱼梦乡","作者":"未知","中图分类号":"I247.5","专业类别":"中国当代小说（待确认）","笔记":"","图片路径":""},{"书名":"命运","作者":"蔡崇达","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"冰上无双","作者":"真树乃","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"没有人像你","作者":"绿亦歌","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"一生一世美人骨","作者":"墨宝非宝","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"左耳","作者":"饶雪漫","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"飞行家","作者":"双雪涛","中图分类号":"I247.5","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"我的十堂大体解剖课","作者":"未知","中图分类号":"I247.5","专业类别":"中国当代小说（纪实）","笔记":"","图片路径":""},{"书名":"我们爱过又放弃","作者":"余秀华","中图分类号":"I227","专业类别":"中国当代诗歌","笔记":"","图片路径":""},{"书名":"遥远的救世主","作者":"豆豆","中图分类号":"I247.57","专业类别":"中国当代长篇小说","笔记":"","图片路径":""},{"书名":"穆斯林的葬礼","作者":"霍达","中图分类号":"I247.57","专业类别":"中国当代长篇小说","笔记":"","图片路径":""},{"书名":"生死疲劳","作者":"莫言","中图分类号":"I247.57","专业类别":"中国当代长篇小说","笔记":"","图片路径":""},{"书名":"解密","作者":"麦家","中图分类号":"I247.57","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"平凡的世界","作者":"路遥","中图分类号":"I247.57","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"兄弟","作者":"余华","中图分类号":"I247.57","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"丰乳肥臀","作者":"莫言","中图分类号":"I247.57","专业类别":"中国当代小说","笔记":"","图片路径":""},{"书名":"寸进","作者":"未知","中图分类号":"I247.5","专业类别":"中国当代小说（待确认）","笔记":"","图片路径":""},{"书名":"命若寒霜","作者":"未知","中图分类号":"待定","专业类别":"待定","笔记":"","图片路径":""},{"书名":"少女，请回答","作者":"张晓晗","中图分类号":"I247.7","专业类别":"中国当代短篇小说","笔记":"","图片路径":""},{"书名":"冬泳","作者":"班宇","中图分类号":"I247.7","专业类别":"中国当代短篇小说","笔记":"","图片路径":""},{"书名":"看见","作者":"柴静","中图分类号":"I253.7","专业类别":"中国纪实文学","笔记":"","图片路径":""},{"书名":"迷案重现","作者":"没药花园","中图分类号":"I253.7","专业类别":"中国纪实文学","笔记":"","图片路径":""},{"书名":"一百个人的十年","作者":"冯骥才","中图分类号":"I253.7","专业类别":"中国文革口述史","笔记":"","图片路径":""},{"书名":"孤独六讲","作者":"蒋勋","中图分类号":"I267","专业类别":"中国当代散文","笔记":"","图片路径":""},{"书名":"人间草木","作者":"汪曾祺","中图分类号":"I267","专业类别":"中国当代散文","笔记":"","图片路径":""},{"书名":"重访边城","作者":"张爱玲","中图分类号":"I267","专业类别":"中国当代散文","笔记":"","图片路径":""},{"书名":"春祺夏安","作者":"杜梨","中图分类号":"I267","专业类别":"中国当代散文","笔记":"","图片路径":""},{"书名":"撒哈拉的故事","作者":"三毛","中图分类号":"I267","专业类别":"中国当代散文","笔记":"","图片路径":""},{"书名":"唱最幸福的歌","作者":"林夕","中图分类号":"I267.1","专业类别":"中国当代散文/随笔","笔记":"","图片路径":""},{"书名":"毫无代价","作者":"林夕","中图分类号":"I267.1","专业类别":"中国当代散文/随笔","笔记":"","图片路径":""},{"书名":"无端欢喜","作者":"余秀华","中图分类号":"I267.1","专业类别":"中国当代诗歌/散文","笔记":"","图片路径":""},{"书名":"浮生六记","作者":"沈复","中图分类号":"I264.9","专业类别":"中国清代散文","笔记":"","图片路径":""},{"书名":"云雀叫了一整天","作者":"木心","中图分类号":"I227","专业类别":"中国当代诗歌","笔记":"","图片路径":""},{"书名":"史记","作者":"司马迁","中图分类号":"K204.2","专业类别":"中国纪传体史书","笔记":"","图片路径":""},{"书名":"万历十五年","作者":"黄仁宇","中图分类号":"K248.307","专业类别":"中国明代历史","笔记":"","图片路径":""},{"书名":"中国通史①","作者":"吕思勉","中图分类号":"K20","专业类别":"中国通史","笔记":"","图片路径":""},{"书名":"枪炮、病菌与钢铁","作者":"贾雷德·戴蒙德","中图分类号":"K107","专业类别":"世界史（文明史）","笔记":"","图片路径":""},{"书名":"左传","作者":"左丘明","中图分类号":"K225.04","专业类别":"中国先秦史","笔记":"","图片路径":""},{"书名":"勾勒两宋风华","作者":"未知","中图分类号":"K244.09","专业类别":"宋代历史","笔记":"","图片路径":""},{"书名":"红星照耀中国","作者":"埃德加·斯诺","中图分类号":"K269.5","专业类别":"中国工农红军历史","笔记":"","图片路径":""},{"书名":"名人传","作者":"罗曼·罗兰","中图分类号":"K835.165.7","专业类别":"外国人物传记","笔记":"","图片路径":""},{"书名":"人生不怕从头再来","作者":"刘晓庆","中图分类号":"K825.78","专业类别":"中国演艺界传记","笔记":"","图片路径":""},{"书名":"新编中国地图册","作者":"成都地图出版社","中图分类号":"K991","专业类别":"世界地图","笔记":"","图片路径":""},{"书名":"世界地图册","作者":"成都地图出版社","中图分类号":"K991","专业类别":"世界地图","笔记":"","图片路径":""},{"书名":"高等数学","作者":"同济大学数学系","中图分类号":"O13","专业类别":"高等数学教材","笔记":"","图片路径":""},{"书名":"高等数学学习辅导与习题选解","作者":"同济大学数学系","中图分类号":"O13","专业类别":"高等数学教辅","笔记":"","图片路径":""},{"书名":"摇摇晃晃的人间","作者":"余秀华","中图分类号":"1227","专业类别":"中国当代诗歌","笔记":"","图片路径":""}];
+
+  var EMBEDDED_BOOKS = BOOKS_DATA.slice();
+  BOOKS_DATA = loadStoredData(YUXIU_STORAGE.BOOKS, EMBEDDED_BOOKS);
+  seedDataCacheIfEmpty(YUXIU_STORAGE.BOOKS, EMBEDDED_BOOKS);
+
+  var urlParams = new URLSearchParams(window.location.search);
+  var keyword = urlParams.get('search') || '';
+
+  var resultsDiv = document.getElementById('results');
+  var infoText = document.getElementById('infoText');
+  var bookForm = document.getElementById('bookForm');
+  var editIndexInput = document.getElementById('editIndex');
+  var titleInput = document.getElementById('bookTitle');
+  var authorInput = document.getElementById('bookAuthor');
+  var codeInput = document.getElementById('bookCode');
+  var categoryInput = document.getElementById('bookCategory');
+  var noteInput = document.getElementById('bookNote');
+  var imageInput = document.getElementById('bookImage');
+
+  function escapeHtml(text) {
+    return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+
+  function persistBooks() {
+    writeDataCache(YUXIU_STORAGE.BOOKS, BOOKS_DATA, true);
+  }
+
+  function bookMatchesKeyword(book) {
+    if (!keyword) return true;
+    return (book.书名 && book.书名.includes(keyword)) ||
+           (book.作者 && book.作者.includes(keyword)) ||
+           (book.笔记 && book.笔记.includes(keyword));
+  }
+
+  function renderBooks() {
+    var visibleCount = 0;
+    var html = '';
+    for (var i = 0; i < BOOKS_DATA.length; i++) {
+      var book = BOOKS_DATA[i];
+      if (!bookMatchesKeyword(book)) continue;
+      visibleCount++;
+      html += '<div class="book-card">' +
+        '<div class="card-actions">' +
+        '<button type="button" class="edit-btn" data-idx="' + i + '">编辑</button>' +
+        '<button type="button" class="delete-btn" data-idx="' + i + '">删除</button></div>' +
+        '<h2>' + escapeHtml(book.书名 || '佚名') + '</h2>' +
+        '<p><strong>作者：</strong>' + escapeHtml(book.作者 || '不详') + '</p>' +
+        '<p><strong>分类：</strong>' + escapeHtml(book.专业类别 || '') + ' ' + escapeHtml(book.中图分类号 || '') + '</p>' +
+        (book.笔记 ? '<p><strong>笔记：</strong>' + escapeHtml(book.笔记) + '</p>' : '') +
+        (book.图片路径 ? '<img src="' + escapeHtml(book.图片路径) + '" alt="' + escapeHtml(book.书名) + '">' : '') +
+      '</div>';
+    }
+    infoText.textContent = keyword ? '搜索结果：' + visibleCount + ' 本书' : '全部藏书：' + BOOKS_DATA.length + ' 本';
+    if (visibleCount === 0) {
+      resultsDiv.innerHTML = '<div class="empty">未找到与「' + escapeHtml(keyword) + '」相关的书籍。</div>';
+      return;
+    }
+    resultsDiv.innerHTML = html;
+  }
+
+  resultsDiv.addEventListener('click', function(e) {
+    var delBtn = e.target.closest('.delete-btn');
+    if (delBtn) {
+      e.preventDefault();
+      var idx = parseInt(delBtn.getAttribute('data-idx'), 10);
+      if (isNaN(idx) || idx < 0 || idx >= BOOKS_DATA.length) return;
+      var title = (BOOKS_DATA[idx] && BOOKS_DATA[idx].书名) || '此书';
+      showConfirmDialog('确认要删除《' + title + '》吗？').then(function(ok) {
+        if (!ok) return;
+        BOOKS_DATA.splice(idx, 1);
+        renderBooks();
+        persistBooks();
+      });
+      return;
+    }
+    var editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+      e.preventDefault();
+      openEditForm(parseInt(editBtn.getAttribute('data-idx'), 10));
+    }
+  });
+
+  window.addEventListener('pageshow', function() {
+    BOOKS_DATA = loadStoredData(YUXIU_STORAGE.BOOKS, EMBEDDED_BOOKS);
+    renderBooks();
+  });
+
+  function openEditForm(index) {
+    if (index === -1) {
+      document.getElementById('formTitle').textContent = '添加新书';
+      editIndexInput.value = '-1';
+      titleInput.value = '';
+      authorInput.value = '';
+      codeInput.value = '';
+      categoryInput.value = '';
+      noteInput.value = '';
+      imageInput.value = '';
+    } else {
+      var book = BOOKS_DATA[index];
+      document.getElementById('formTitle').textContent = '编辑《' + book.书名 + '》';
+      editIndexInput.value = index;
+      titleInput.value = book.书名 || '';
+      authorInput.value = book.作者 || '';
+      codeInput.value = book.中图分类号 || '';
+      categoryInput.value = book.专业类别 || '';
+      noteInput.value = book.笔记 || '';
+      imageInput.value = book.图片路径 || '';
+    }
+    bookForm.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function closeForm() {
+    bookForm.classList.remove('active');
+  }
+
+  document.getElementById('saveBookBtn').addEventListener('click', function() {
+    var index = parseInt(editIndexInput.value);
+    var bookData = {
+      "书名": titleInput.value.trim(),
+      "作者": authorInput.value.trim(),
+      "中图分类号": codeInput.value.trim(),
+      "专业类别": categoryInput.value.trim(),
+      "笔记": noteInput.value.trim(),
+      "图片路径": imageInput.value.trim()
+    };
+    if (!bookData.书名) { alert('书名不能为空'); return; }
+    if (index === -1) {
+      BOOKS_DATA.push(bookData);
+    } else {
+      BOOKS_DATA[index] = bookData;
+    }
+    renderBooks();
+    closeForm();
+    persistBooks();
+  });
+
+  document.getElementById('cancelFormBtn').addEventListener('click', closeForm);
+  document.getElementById('showAddFormBtn').addEventListener('click', function() { openEditForm(-1); });
+
+  renderBooks();
+</script>
+
+</body></html>

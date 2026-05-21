@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随身图书角</title>
+<style>
+  :root {
+    --ink: #1a3048;
+    --ink-muted: #4a6278;
+    --celadon: #5a8ab0;
+    --celadon-deep: #2e5a7a;
+    --sky: #eef4f8;
+    --paper: #faf9f6;
+    --card: #ffffff;
+    --border: #8fafc8;
+    --border-light: #b8cfe0;
+    --accent: #3d6b94;
+    --accent-hover: #254d6b;
+    --gold: #9a7b3c;
+    --shadow: rgba(30, 70, 110, 0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background-color: #b8cfe0;
+    background-image: linear-gradient(180deg, #dce8f4 0%, #c5d8e8 40%, #9eb8cc 75%, #7a9aad 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; overflow-x: hidden;
+  }
+  .landscape-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .landscape-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 100vh; }
+  body > *:not(.landscape-bg) { position: relative; z-index: 1; }
+  nav {
+    width: 100%; max-width: 760px; display: flex; gap: 12px;
+    padding: 1.4rem 1rem 0.9rem; margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+    align-items: baseline;
+  }
+  nav a {
+    text-decoration: none; font-size: 0.95rem; font-weight: 500;
+    color: var(--ink-muted); background: var(--card);
+    padding: 0.45rem 1.1rem; border-radius: 2px 2px 0 0;
+    border: 1px solid var(--border-light); border-bottom: none;
+    box-shadow: 0 2px 6px var(--shadow);
+    display: inline-flex; align-items: center; gap: 8px;
+    letter-spacing: 0.08em; transition: all 0.25s ease;
+  }
+  nav a::after {
+    content: ""; display: inline-block; width: 7px; height: 7px;
+    background: var(--celadon-deep); border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+  }
+  nav a:hover { background: var(--sky); color: var(--ink); border-color: var(--border); }
+  .main-content {
+    flex: 1; display: flex; justify-content: center; align-items: center;
+    width: 100%; max-width: 760px; padding: 0 1rem 4rem; margin-top: -2rem;
+  }
+  .search-card {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3rem 2.8rem; width: 100%; max-width: 520px;
+    text-align: center;
+    box-shadow: 0 8px 32px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.8);
+    position: relative;
+  }
+  .search-card::after {
+    content: ""; position: absolute; bottom: 0; left: 12%; right: 12%;
+    height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent);
+  }
+  .search-card h1 {
+    font-family: "Noto Serif SC", "Times New Roman", serif;
+    font-size: 2rem; font-weight: 500; color: var(--celadon-deep);
+    margin-bottom: 2rem; letter-spacing: 3px;
+  }
+  .brand-sign {
+    font-size: 0.62em; font-weight: 400; opacity: 0.72;
+    letter-spacing: 0.12em; vertical-align: baseline; margin-left: 0.15em;
+  }
+  .search-box { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  #searchInput {
+    flex: 1; min-width: 200px; padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: 2px; font-size: 1rem;
+    background: #fff; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit; color: var(--ink);
+  }
+  #searchInput::placeholder { color: #8aa4b8; }
+  #searchInput:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(61, 107, 148, 0.15);
+  }
+  #searchBtn {
+    padding: 14px 28px; background: linear-gradient(180deg, var(--accent) 0%, var(--celadon-deep) 100%);
+    color: #f5f9fc; border: 1px solid var(--celadon-deep);
+    border-radius: 2px; font-size: 1rem; font-weight: 500;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+    font-family: inherit;
+    box-shadow: 0 3px 10px rgba(46, 90, 122, 0.25);
+  }
+  #searchBtn:hover {
+    background: linear-gradient(180deg, var(--accent-hover) 0%, #1e3d55 100%);
+    transform: translateY(-1px);
+  }
+</style>
+</head>
+<body>
+<div class="landscape-bg" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="mf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a8bcc8"/><stop offset="100%" stop-color="#d8e4ec" stop-opacity="0"/></linearGradient>
+    <linearGradient id="mm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a9aad"/><stop offset="100%" stop-color="#c5d6e2" stop-opacity="0.2"/></linearGradient>
+    <linearGradient id="mn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a8498"/><stop offset="100%" stop-color="#b0c8d4" stop-opacity="0.3"/></linearGradient>
+    <linearGradient id="stream" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d4e8f2" stop-opacity="0"/><stop offset="50%" stop-color="#b8d4e8" stop-opacity="0.35"/><stop offset="100%" stop-color="#d4e8f2" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g fill="#f8fafa" stroke="#c8dae6" stroke-width="0.8" opacity="0.65">
+    <ellipse cx="200" cy="95" rx="78" ry="22"/><ellipse cx="248" cy="88" rx="52" ry="18"/><ellipse cx="168" cy="102" rx="40" ry="14"/>
+    <ellipse cx="1180" cy="72" rx="65" ry="18"/><ellipse cx="1225" cy="78" rx="42" ry="14"/>
+    <ellipse cx="720" cy="55" rx="55" ry="16" opacity="0.45"/>
+  </g>
+  <path fill="url(#mf)" opacity="0.55" d="M-40,320 Q180,280 360,295 Q540,270 720,288 Q920,265 1120,290 Q1280,275 1480,305 L1480,580 L-40,580 Z"/>
+  <path fill="url(#mm)" opacity="0.5" d="M-40,380 Q220,340 400,365 Q580,395 760,370 Q960,335 1140,360 Q1300,345 1480,375 L1480,580 L-40,580 Z"/>
+  <path fill="url(#mn)" opacity="0.42" d="M-40,430 Q160,395 320,415 Q480,445 640,420 Q820,385 980,410 Q1140,435 1280,405 L1480,425 L1480,580 L-40,580 Z"/>
+  <path fill="url(#stream)" d="M120,505 Q280,492 420,508 Q560,522 700,498 Q860,478 1020,512 Q1180,528 1320,502 L1480,498 L1480,580 L-40,580 L-40,518 Q60,510 120,505 Z"/>
+  <path fill="none" stroke="#9eb8c8" stroke-width="1.2" stroke-opacity="0.35" d="M180,502 Q340,488 500,505 Q660,518 820,495 Q980,472 1140,508"/>
+</svg>
+</div>
+<nav>
+  <a href="index.html">随身图书角 <span class="brand-sign">yyx</span></a>
+  <a href="log.html">工程日志</a>
+</nav>
+<div class="main-content">
+  <div class="search-card">
+    <h1>随身图书角 <span class="brand-sign">yyx</span></h1>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="输入书名、作者或关键词…" autofocus>
+      <button id="searchBtn">搜索</button>
+    </div>
+  </div>
+</div>
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  function handleSearch() {
+    const keyword = searchInput.value.trim();
+    if (!keyword) return;
+    window.location.href = `book.html?search=${encodeURIComponent(keyword)}`;
+  }
+  searchBtn.addEventListener('click', handleSearch);
+  searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSearch(); });
+</script>
+</body>
+</html>

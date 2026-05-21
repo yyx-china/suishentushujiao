@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日志详情 · 随身图书角</title>
+<style>
+  :root {
+    --ink: #1a3048;
+    --ink-muted: #4a6278;
+    --celadon-deep: #2e5a7a;
+    --sky: #eef4f8;
+    --card: #ffffff;
+    --border: #8fafc8;
+    --border-light: #b8cfe0;
+    --accent: #3d6b94;
+    --shadow: rgba(30, 70, 110, 0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    background-color: #b8cfe0;
+    background-image: linear-gradient(180deg, #dce8f4 0%, #c5d8e8 40%, #9eb8cc 75%, #7a9aad 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; overflow-x: hidden;
+  }
+  .landscape-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .landscape-bg svg { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 100vh; }
+  body > *:not(.landscape-bg) { position: relative; z-index: 1; }
+  nav {
+    width: 100%; max-width: 760px; display: flex; gap: 12px;
+    padding: 1.4rem 1rem 0.9rem; margin-bottom: 2rem;
+    border-bottom: 2px solid var(--border);
+  }
+  nav a {
+    text-decoration: none; font-size: 0.95rem; font-weight: 500;
+    color: var(--ink-muted); background: var(--card);
+    padding: 0.45rem 1.1rem; border-radius: 2px 2px 0 0;
+    border: 1px solid var(--border-light); border-bottom: none;
+    box-shadow: 0 2px 6px var(--shadow);
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.25s;
+  }
+  nav a::after {
+    content: ""; display: inline-block; width: 7px; height: 7px;
+    background: var(--celadon-deep); border-radius: 50%;
+  }
+  nav a:hover { background: var(--sky); color: var(--ink); }
+  .container { width: 100%; max-width: 760px; padding: 0 1rem 4rem; }
+  .detail-card {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2.2rem 2rem;
+    margin-bottom: 1.8rem;
+    box-shadow: 0 6px 24px var(--shadow);
+  }
+  .detail-card .log-id-big { font-size: 0.9rem; color: var(--accent); margin-bottom: 0.5rem; }
+  .detail-card h2 {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.4rem; font-weight: 500;
+    color: var(--celadon-deep);
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .form-row { margin-bottom: 1rem; }
+  .form-row label { font-size: 0.8rem; font-weight: 500; color: var(--ink-muted); display: block; margin-bottom: 0.3rem; }
+  input, textarea {
+    width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 0.95rem; background: #fffcf9;
+    font-family: inherit; color: var(--ink);
+  }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.2rem; }
+  .btn {
+    background: linear-gradient(180deg, var(--accent), var(--celadon-deep));
+    color: #f5f9fc; border: 1px solid var(--celadon-deep);
+    padding: 0.55rem 1.3rem; border-radius: 2px; font-size: 0.92rem;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn.secondary { background: var(--card); color: var(--ink-muted); border: 1px solid var(--border); }
+  .btn.danger { background: #fff; color: #8b3a3a; border: 1px solid #c9a0a0; }
+  .back-link {
+    color: var(--accent); text-decoration: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .back-link:hover { color: var(--celadon-deep); }
+  .empty-msg { padding: 3rem; color: var(--ink-muted); text-align: center; font-size: 1rem; }
+</style>
+</head>
+<body>
+<div class="landscape-bg" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="mf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a8bcc8"/><stop offset="100%" stop-color="#d8e4ec" stop-opacity="0"/></linearGradient>
+    <linearGradient id="mm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7a9aad"/><stop offset="100%" stop-color="#c5d6e2" stop-opacity="0.2"/></linearGradient>
+    <linearGradient id="mn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5a8498"/><stop offset="100%" stop-color="#b0c8d4" stop-opacity="0.3"/></linearGradient>
+    <linearGradient id="stream" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#d4e8f2" stop-opacity="0"/><stop offset="50%" stop-color="#b8d4e8" stop-opacity="0.35"/><stop offset="100%" stop-color="#d4e8f2" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g fill="#f8fafa" stroke="#c8dae6" stroke-width="0.8" opacity="0.65">
+    <ellipse cx="200" cy="95" rx="78" ry="22"/><ellipse cx="248" cy="88" rx="52" ry="18"/><ellipse cx="168" cy="102" rx="40" ry="14"/>
+    <ellipse cx="1180" cy="72" rx="65" ry="18"/><ellipse cx="1225" cy="78" rx="42" ry="14"/>
+    <ellipse cx="720" cy="55" rx="55" ry="16" opacity="0.45"/>
+  </g>
+  <path fill="url(#mf)" opacity="0.55" d="M-40,320 Q180,280 360,295 Q540,270 720,288 Q920,265 1120,290 Q1280,275 1480,305 L1480,580 L-40,580 Z"/>
+  <path fill="url(#mm)" opacity="0.5" d="M-40,380 Q220,340 400,365 Q580,395 760,370 Q960,335 1140,360 Q1300,345 1480,375 L1480,580 L-40,580 Z"/>
+  <path fill="url(#mn)" opacity="0.42" d="M-40,430 Q160,395 320,415 Q480,445 640,420 Q820,385 980,410 Q1140,435 1280,405 L1480,425 L1480,580 L-40,580 Z"/>
+  <path fill="url(#stream)" d="M120,505 Q280,492 420,508 Q560,522 700,498 Q860,478 1020,512 Q1180,528 1320,502 L1480,498 L1480,580 L-40,580 L-40,518 Q60,510 120,505 Z"/>
+  <path fill="none" stroke="#9eb8c8" stroke-width="1.2" stroke-opacity="0.35" d="M180,502 Q340,488 500,505 Q660,518 820,495 Q980,472 1140,508"/>
+</svg>
+</div>
+<nav>
+  <a href="index.html">随身图书角 <span class="brand-sign">yyx</span></a>
+  <a href="log.html">工程日志</a>
+</nav>
+<div class="container" id="detailContainer"></div>
+
+<script src="common.js"></script>
+<script>
+  var urlParams = new URLSearchParams(window.location.search);
+  var logId = urlParams.get('id');
+  var legacyData = urlParams.get('data');
+
+  function readAllLogs() {
+    var data = loadLogsDataset([]);
+    if (!data.length && legacyData) {
+      try { data = JSON.parse(decodeURIComponent(legacyData)); } catch (e) {}
+      if (data.length) writeDataCache(YUXIU_STORAGE.LOGS, data, false);
+    }
+    return data;
+  }
+
+  function findLogIndex(logs, id) {
+    for (var i = 0; i < logs.length; i++) {
+      if (logs[i].timestamp === id) return i;
+    }
+    return -1;
+  }
+
+  function toLocalDatetimeValue(iso) {
+    var d = new Date(iso);
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    var h = String(d.getHours()).padStart(2, '0');
+    var min = String(d.getMinutes()).padStart(2, '0');
+    var s = String(d.getSeconds()).padStart(2, '0');
+    return y + '-' + m + '-' + day + 'T' + h + ':' + min + ':' + s;
+  }
+
+  function renderDetail() {
+    var LOGS_DATA = readAllLogs();
+    var logIndex = findLogIndex(LOGS_DATA, logId);
+    var log = logIndex >= 0 ? LOGS_DATA[logIndex] : null;
+    var container = document.getElementById('detailContainer');
+
+    if (!log) {
+      container.innerHTML =
+        '<div class="empty-msg">该日志不存在或已被删除。<br>请先从 <a class="back-link" href="log.html">工程日志列表</a> 进入。<br><br>' +
+        '<a class="back-link" href="log.html">← 返回日志列表</a></div>';
+      return;
+    }
+
+    var idDisplay = log.id ? '第 ' + log.id + ' 条日志' : '';
+    container.innerHTML =
+      '<div class="detail-card">' +
+        (idDisplay ? '<div class="log-id-big">' + idDisplay + '</div>' : '') +
+        '<h2>编辑日志</h2>' +
+        '<div class="form-row"><label>时间</label><input type="datetime-local" id="editTime" step="1"></div>' +
+        '<div class="form-row"><label>做了什么</label><textarea id="editAction" rows="3"></textarea></div>' +
+        '<div class="form-row"><label>工具</label><input type="text" id="editTools"></div>' +
+        '<div class="form-row"><label>耗时</label><input type="text" id="editDuration"></div>' +
+        '<div class="form-row"><label>进步</label><textarea id="editProgress" rows="2"></textarea></div>' +
+        '<div class="form-row"><label>修改</label><textarea id="editModifications" rows="2"></textarea></div>' +
+        '<div class="btn-row">' +
+          '<button type="button" class="btn" id="saveLogBtn">保存</button>' +
+          '<button type="button" class="btn danger" id="deleteLogBtn">删除</button>' +
+          '<a class="btn secondary" href="log.html" style="text-decoration:none;display:inline-block;line-height:1.4;">取消</a>' +
+        '</div></div>' +
+      '<a class="back-link" href="log.html">← 返回日志列表</a>';
+
+    document.getElementById('editTime').value = toLocalDatetimeValue(log.timestamp);
+    document.getElementById('editAction').value = log.action || '';
+    document.getElementById('editTools').value = log.tools || '';
+    document.getElementById('editDuration').value = log.duration || '';
+    document.getElementById('editProgress').value = log.progress || '';
+    document.getElementById('editModifications').value = log.modifications || '';
+
+    document.getElementById('saveLogBtn').addEventListener('click', function() {
+      var logs = readAllLogs();
+      var idx = findLogIndex(logs, logId);
+      if (idx < 0) { alert('日志已不存在'); return; }
+      var ts = document.getElementById('editTime').value;
+      var action = document.getElementById('editAction').value.trim();
+      if (!ts) { alert('请选择时间'); return; }
+      if (!action) { alert('请填写「做了什么」'); return; }
+      var entry = logs[idx];
+      logs[idx] = {
+        id: entry.id,
+        timestamp: new Date(ts).toISOString(),
+        action: action,
+        tools: document.getElementById('editTools').value.trim(),
+        duration: document.getElementById('editDuration').value.trim(),
+        progress: document.getElementById('editProgress').value.trim(),
+        modifications: document.getElementById('editModifications').value.trim()
+      };
+      writeDataCache(YUXIU_STORAGE.LOGS, logs, true);
+      window.location.href = 'log.html';
+    });
+
+    document.getElementById('deleteLogBtn').addEventListener('click', function() {
+      showConfirmDialog('确认要删除这条日志吗？').then(function(ok) {
+        if (!ok) return;
+        var logs = readAllLogs();
+        var idx = findLogIndex(logs, logId);
+        if (idx < 0) { window.location.href = 'log.html'; return; }
+        logs.splice(idx, 1);
+        writeDataCache(YUXIU_STORAGE.LOGS, logs, true);
+        window.location.href = 'log.html';
+      });
+    });
+  }
+
+  renderDetail();
+</script>
+</body>
+</html>
